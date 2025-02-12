@@ -5,7 +5,7 @@ from leakhunter.yara_scanner import load_yara_rules, scan_with_yara
 
 class TestScanner(unittest.TestCase):
     def setUp(self):
-        # Create a test file with sensitive data
+        
         self.test_file = "test_file.txt"
         with open(self.test_file, "w") as f:
             f.write("email=test@example.com\n")
@@ -21,14 +21,14 @@ class TestScanner(unittest.TestCase):
     def test_regex_scanner(self):
         # Test regex-based scanning
         results = find_sensitive_data(self.test_file)
-        self.assertEqual(len(results), 4)  # Expect 4 findings (email, password, credit card, API key)
+        self.assertEqual(len(results), 4) 
 
     def test_yara_scanner(self):
         # Test YARA-based scanning
         rules = load_yara_rules("rules/sensitive_data.yar")
-        self.assertIsNotNone(rules)  # Ensure rules are loaded
+        self.assertIsNotNone(rules)  
         results = scan_with_yara(self.test_file, rules)
-        self.assertEqual(len(results), 4)  # Expect 4 findings (email, password, credit card, API key)
+        self.assertEqual(len(results), 4)  
 
 if __name__ == "__main__":
     unittest.main()
