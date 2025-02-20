@@ -1,27 +1,69 @@
 import argparse
 import os
-from colorama import Fore, Style
+import pyfiglet
+from colorama import Fore, Style, init
 from leakhunter import (
     find_sensitive_data_regex,
     find_sensitive_data_yara,
-
     load_yara_rules,
     check_file_virustotal,
     setup_logging,
     is_binary_file
 )
 
+def print_banner():
+    """Displays an enhanced ASCII banner with tool description and features."""
+    # Initialize colorama
+    init()
+    
+    # Create the main banner
+    banner = pyfiglet.figlet_format("LeakHunter", font="slant")
+    
+    # Tool description
+    description = (
+        "Advanced Security Scanner for Sensitive Data Detection"
+    )
+    
+    # Feature list
+    features = [
+        "🔍 Regex Pattern Matching",
+        "📜 YARA Rules Integration",
+        "🛡️ VirusTotal Malware Scanning",
+        "🔒 File Reputation Checks",
+        "📁 Recursive Directory Scanning"
+    ]
+    
+    # Version and author info
+    version_info = "v1.0.0"
+    
+    # Print everything with styling
+    print(Fore.CYAN + banner + Style.RESET_ALL)
+    print(Fore.YELLOW + "=" * 60 + Style.RESET_ALL)
+    print(Fore.MAGENTA + f"{description:^60}" + Style.RESET_ALL)
+    print(Fore.YELLOW + "=" * 60 + Style.RESET_ALL)
+    
+    # Print features
+    print(Fore.WHITE + "\nKey Features:" + Style.RESET_ALL)
+    for feature in features:
+        print(Fore.GREEN + f"  {feature}" + Style.RESET_ALL)
+    
+    # Print version
+    print(Fore.BLUE + f"\nVersion: {version_info}" + Style.RESET_ALL)
+    print(Fore.YELLOW + "\n" + "=" * 60 + Style.RESET_ALL)
+    print(Fore.WHITE + "\nStarting scan...\n" + Style.RESET_ALL)
+
 def scan_file(file_path, yara_rules=None, vt_api_key=None):
-    """Scan a single file using all available methods"""
+    """Scan a single file using regex, YARA rules, and VirusTotal."""
     findings = []
     
     try:
-        # Skip binary files for content scanning
         if is_binary_file(file_path):
             print(Fore.YELLOW + f"[INFO] Skipping binary file: {file_path}" + Style.RESET_ALL)
             if vt_api_key:
                 check_file_virustotal(file_path, vt_api_key)
             return findings
+
+        print(Fore.BLUE + f"[*] Scanning file: {file_path}" + Style.RESET_ALL)
 
         # Regex scanning
         regex_findings = find_sensitive_data_regex(file_path)
@@ -32,7 +74,7 @@ def scan_file(file_path, yara_rules=None, vt_api_key=None):
             yara_findings = find_sensitive_data_yara(file_path, yara_rules)
             findings.extend(yara_findings)
         
-        # VirusTotal scanning for all files
+        # VirusTotal scanning
         if vt_api_key:
             try:
                 check_file_virustotal(file_path, vt_api_key)
@@ -45,8 +87,9 @@ def scan_file(file_path, yara_rules=None, vt_api_key=None):
         return findings
 
 def scan_directory(directory, yara_rules=None, vt_api_key=None):
-    """Scan a directory recursively"""
+    """Recursively scan a directory."""
     findings = []
+    print(Fore.BLUE + f"[*] Scanning directory: {directory}" + Style.RESET_ALL)
     for root, _, files in os.walk(directory):
         for file in files:
             file_path = os.path.join(root, file)
@@ -55,23 +98,30 @@ def scan_directory(directory, yara_rules=None, vt_api_key=None):
     return findings
 
 def main():
-    parser = argparse.ArgumentParser(description="LeakHunter - Advanced Sensitive Data Scanner")
-    parser.add_argument('--path', required=True, help="File or directory to scan")
-    parser.add_argument('--yara', help="Path to YARA rules file")
-    parser.add_argument('--virustotal', action='store_true', help="Enable VirusTotal scanning")
-    parser.add_argument('--debug', action='store_true', help="Enable debug logging")
+    print_banner()
+
+    parser = argparse.ArgumentParser(
+        description="LeakHunter - Scan files & directories for sensitive data leaks.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument('-p', '--path', required=True, help="Path to file or directory to scan")
+    parser.add_argument('-y', '--yara', help="Path to YARA rules file")
+    parser.add_argument('-vt', '--virustotal', action='store_true', help="Enable VirusTotal scanning")
+    parser.add_argument('-d', '--debug', action='store_true', help="Enable debug logging")
+
     args = parser.parse_args()
-    
+
     # Setup logging
     logger = setup_logging(level='DEBUG' if args.debug else 'INFO')
-    
-    # Load YARA rules if specified
+
+    # Load YARA rules if provided
     yara_rules = None
     if args.yara:
         yara_rules = load_yara_rules(args.yara)
         if not yara_rules:
             return
-    
+
     # Get VirusTotal API key if enabled
     vt_api_key = None
     if args.virustotal:
@@ -79,9 +129,7 @@ def main():
         if not vt_api_key:
             print(Fore.RED + "[ERROR] VIRUSTOTAL_API_KEY environment variable not set" + Style.RESET_ALL)
             return
-    
-    print(Fore.CYAN + "\n🔍 LeakHunter - Scanning for sensitive data...\n" + Style.RESET_ALL)
-    
+
     # Perform scanning
     if os.path.isdir(args.path):
         findings = scan_directory(args.path, yara_rules, vt_api_key)
@@ -90,7 +138,7 @@ def main():
     else:
         print(Fore.RED + f"[ERROR] {args.path} is not a valid file or directory" + Style.RESET_ALL)
         return
-    
+
     # Print results
     if findings:
         print(Fore.YELLOW + "\n⚠️  Potential leaks found:\n" + Style.RESET_ALL)

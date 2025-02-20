@@ -23,7 +23,10 @@ def find_sensitive_data_yara(file_path, rules):
                 lines = content.split('\n')
             
             for string in match.strings:
-                offset, identifier, matched_data = string
+                offset = string[0]  # Correct unpacking
+                identifier = string[1]
+                matched_data = string[2]
+
                 if isinstance(matched_data, bytes):
                     matched_data = matched_data.decode('utf-8', errors='ignore')
                 
