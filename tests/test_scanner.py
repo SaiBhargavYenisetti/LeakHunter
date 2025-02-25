@@ -1,3 +1,4 @@
+#test_scanner
 import unittest
 import os
 from leakhunter.scanner import find_sensitive_data

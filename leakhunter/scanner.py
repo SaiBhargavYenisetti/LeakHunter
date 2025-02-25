@@ -1,8 +1,7 @@
 import os
 import re
-import yara
 from colorama import Fore, Style
-
+from .yara_scanner import load_yara_rules, find_sensitive_data_yara  # Correct relative import
 def find_sensitive_data_regex(file_path):
     patterns = {
         "API Key": r'(?i)(?:api[_-]?key|apikey|aws[_-]?access[_-]?key[_-]?id|aws[_-]?secret[_-]?access[_-]?key)\s*[=:]\s*["\']?([A-Za-z0-9_\-]{16,})["\']?',
@@ -26,21 +25,7 @@ def find_sensitive_data_regex(file_path):
     
     return findings
 
-def find_sensitive_data_yara(file_path, rules):
-    findings = []
-    try:
-        matches = rules.match(file_path)
-        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-            content = f.read()
-            for match in matches:
-                for offset, _, matched_data in match.strings:
-                    line_no = content.count('\n', 0, offset) + 1
-                    findings.append((match.rule, file_path, line_no, [matched_data.decode('utf-8', errors='ignore')]))
-    except Exception as e:
-        print(Fore.RED + f"[ERROR] YARA scan failed for {file_path}: {e}" + Style.RESET_ALL)
-    return findings
-
-def scan_file(file_path, yara_rules=None):
+def scan_file(file_path, yara_rules=("rules/sensitive_data_yar")):
     if not os.path.isfile(file_path):
         print(Fore.RED + f"[ERROR] {file_path} is not a valid file." + Style.RESET_ALL)
         return []
@@ -67,11 +52,3 @@ def scan_directory(directory, yara_rules=None):
                 findings.extend(scan_file(file_path, yara_rules))
     
     return findings
-
-def load_yara_rules(rule_file):
-    try:
-        rules = yara.compile(filepath=rule_file)
-        return rules
-    except yara.Error as e:
-        print(Fore.RED + f"[ERROR] Failed to load YARA rules: {e}" + Style.RESET_ALL)
-        return None

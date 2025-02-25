@@ -118,7 +118,8 @@ def main():
     # Load YARA rules if provided
     yara_rules = None
     if args.yara:
-        yara_rules = load_yara_rules(args.yara)
+        yara_rules = load_yara_rules("rules/sensitive_data.yar")
+
         if not yara_rules:
             return
 

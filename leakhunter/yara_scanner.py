@@ -1,3 +1,4 @@
+# yara_scanner.py
 import yara
 from colorama import Fore, Style
 
@@ -17,22 +18,12 @@ def find_sensitive_data_yara(file_path, rules):
         matches = rules.match(file_path)
         if not matches:
             print(f"[DEBUG] No matches found in {file_path}")
+            return findings
+        
+        # Just return the rule names that matched
         for match in matches:
-            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                content = f.read()
-                lines = content.split('\n')
-            
-            for string in match.strings:
-                offset = string[0]  # Correct unpacking
-                identifier = string[1]
-                matched_data = string[2]
-
-                if isinstance(matched_data, bytes):
-                    matched_data = matched_data.decode('utf-8', errors='ignore')
-                
-                line_no = content.count('\n', 0, offset) + 1
-                findings.append((match.rule, file_path, line_no, matched_data))
-                print(f"[DEBUG] Match found: Rule {match.rule}, File: {file_path}, Line: {line_no}, Data: {matched_data}")
+            findings.append((match.rule, file_path, 0, "YARA rule matched"))
+            print(f"[DEBUG] Match found: Rule {match.rule}, File: {file_path}")
         
         return findings
     except Exception as e:
